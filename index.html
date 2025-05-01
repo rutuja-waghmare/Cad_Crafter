@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crafter - Create Your AutoCAD Plan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Create Your Custom AutoCAD Plan</h1>
+
+        <form id="plan-form">
+            <label>Room Name</label>
+            <input type="text" id="room_name" placeholder="e.g., Living Room" required>
+
+            <label>Room Length (meters)</label>
+            <input type="number" id="room_length" placeholder="e.g., 5" required>
+
+            <label>Room Width (meters)</label>
+            <input type="number" id="room_width" placeholder="e.g., 4" required>
+
+            <label>Room X Location (meters)</label>
+            <input type="number" id="room_x" placeholder="e.g., 0" required>
+
+            <label>Room Y Location (meters)</label>
+            <input type="number" id="room_y" placeholder="e.g., 0" required>
+
+            <button type="submit">Generate Plan</button>
+        </form>
+
+        <canvas id="plan-canvas" width="600" height="400" style="border:1px solid #ccc; margin-top: 20px;"></canvas>
+
+        <div id="plan-result" style="display:none;">
+            <h3>Generated Plan:</h3>
+            <pre id="plan-text"></pre>
+        </div>
+    </div>
+
+    <script>
+        const rooms = [];
+
+        const canvas = document.getElementById('plan-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawRooms() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+            rooms.forEach(room => {
+                ctx.strokeStyle = '#007bff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(room.x * 20, room.y * 20, room.length * 20, room.width * 20);
+
+                ctx.font = "12px Arial";
+                ctx.fillStyle = "#000";
+                ctx.fillText(room.name, room.x * 20 + 5, room.y * 20 + 15);
+            });
+        }
+
+        document.getElementById('plan-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const room = {
+                name: document.getElementById('room_name').value,
+                length: parseFloat(document.getElementById('room_length').value),
+                width: parseFloat(document.getElementById('room_width').value),
+                x: parseFloat(document.getElementById('room_x').value),
+                y: parseFloat(document.getElementById('room_y').value)
+            };
+            rooms.push(room); // Add the current room
+
+            drawRooms(); // Draw all rooms
+
+            fetch('/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rooms: rooms }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('plan-result').style.display = 'block';
+                document.getElementById('plan-text').innerText = data.plan;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+
+            document.getElementById('plan-form').reset(); // Clear form after submission
+        });
+    </script>
+</body>
+</html>
